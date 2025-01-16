@@ -7,6 +7,10 @@ class SuperAbility(Enum):
     BOOST = 2
     CRITICAL_DAMAGE = 3
     BLOCK_AND_REVERT = 4
+    NECROMANCY = 5
+    HACKING = 6
+    BLOCKING = 7
+    INVICIBILITY = 8
 
 
 class GameEntity:
@@ -100,10 +104,16 @@ class Warrior(Hero):
 class Magic(Hero):
     def __init__(self, name, health, damage):
         Hero.__init__(self, name, health, damage, SuperAbility.BOOST)
+        self.__rounds_boosted = 0
 
     def apply_super_power(self, boss, heroes):
-        # TODO Here will be implementation of boosting
-        pass
+        if self.__rounds_boosted < 4:
+            boost_amount = randint(5,15)
+            for hero in heroes:
+                if hero.health > 0 and hero != self:
+                 hero.damage += boost_amount
+            self.__rounds_boosted +=1
+            print(f"Маг {self.name} забустил {boost_amount}")
 
 
 class Berserk(Hero):
@@ -135,11 +145,81 @@ class Medic(Hero):
                 hero.health += self.__heal_points
 
 
+class Witcher(Hero):
+    def __init__(self,name, health, damage):
+        Hero.__init__(self, name, health, damage, SuperAbility.NECROMANCY)
+        self.revived_used = False
+
+    def apply_super_power(self, boss, heroes):
+        if not self.revived_used:
+            for hero in heroes:
+                if hero.health == 0 and hero != self:
+                    hero.health = self.health
+                    self.health = 0
+                    self.revived_used = True
+                    print(f"Witcher {self.name} пожертвовал собой воскресив {hero.name} ")
+                    break
+
+class Hacker(Hero):
+    def __init__(self, name, health, damage):
+        Hero.__init__(self, name, health, damage, SuperAbility.HACKING)
+        self.__last_round_used = 0
+
+    def apply_super_power(self, boss, heroes):
+        global round_number
+
+
+        if round_number % 2 == 0:
+            stolen_health = randint(10, 30)
+            boss.health -= stolen_health
+            self.health += stolen_health
+            print(f"{self.name} украл {stolen_health} здоровья у босса!")
+
+class Golem(Hero):
+    def __init__(self, name, health, damage):
+        Hero.__init__(self, name, health, damage, SuperAbility.BLOCKING)
+
+    def apply_super_power(self, boss, heroes):
+        absorbed_damage = 0
+        for hero in heroes:
+            if hero.health > 0 and hero != self:
+                redirected_damage = boss.damage // 5
+                hero.health += redirected_damage
+                absorbed_damage += redirected_damage
+                self.health -= redirected_damage
+        print(f"Голем {self.name} принял на себя {absorbed_damage} урона.")
+
+class Avrora(Hero):
+    def __init__(self,name, health, damage,):
+        Hero.__init__(self, name, health, damage, SuperAbility.INVICIBILITY)
+        self.__invisibility_rounds = 0
+        self.__damage_stored = 0
+        self.__used_invisibility = False
+
+    def apply_super_power(self, boss, heroes):
+        global round_number
+
+        if not self.__used_invisibility:
+            self.__invisibility_rounds = 2
+            self.__used_invisibility = True
+            print(f"Аврора {self.name} исчезает на 2 раунда!")
+            return
+
+        if self.__invisibility_rounds > 0:
+            print(f"Аврора {self.name} невидима, урон не получает.")
+            self.__damage_stored += boss.damage
+            self.__invisibility_rounds -= 1
+        elif self.__damage_stored > 0:
+            boss.health -= self.__damage_stored
+            print(f"Аврора {self.name} возвращает боссу {self.__damage_stored} урона!")
+            self.__damage_stored = 0
+
+
 round_number = 0
 
 
 def show_statistics(boss, heroes):
-    print(f'ROUND: {round_number} -------------')
+    print(f'ROUND: {round_number} ','-'*50)
     print(boss)
     for hero in heroes:
         print(hero)
@@ -181,7 +261,11 @@ def start_game():
     berserk = Berserk('Berserkbek', 250, 5)
     doc = Medic('Watson', 200, 5, 15)
     assistant = Medic('Yunga', 300, 5, 5)
-    heroes_list = [warrior_1, assistant, warrior_2, magic, berserk, doc]
+    witcher = Witcher("Gerald",320,0)
+    hacker = Hacker('Robot',180,5)
+    golem = Golem('Groot',300,1)
+    avrora = Avrora('Аврора',120,4)
+    heroes_list = [warrior_1, assistant, warrior_2, magic, berserk, doc,witcher,hacker,golem,avrora]
 
     show_statistics(boss, heroes_list)
 
@@ -190,4 +274,4 @@ def start_game():
 
 
 start_game()
-#my homework4
+
